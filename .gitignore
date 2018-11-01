@@ -27,6 +27,9 @@ bin
 # other local files
 other
 
+# actual local data
+data
+
 # temporary files
 *.tmp
 
