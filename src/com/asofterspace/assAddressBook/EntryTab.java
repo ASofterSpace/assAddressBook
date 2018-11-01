@@ -13,6 +13,7 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.GridBagLayout;
@@ -95,9 +96,18 @@ public class EntryTab {
 		tab.add(nameLabel, new Arrangement(0, 0, 1.0, 0.0));
 
 		if (entry instanceof Person) {
-			JLabel worksForLabel = new JLabel("Works for: " + ((Person) entry).getCompany().getName());
+			final String companyName = ((Person) entry).getCompany().getName();
+			JLabel worksForLabel = new JLabel("Works for: " + companyName);
 			worksForLabel.setPreferredSize(new Dimension(0, worksForLabel.getPreferredSize().height*2));
 			tab.add(worksForLabel, new Arrangement(0, 1, 1.0, 0.0));
+			
+			worksForLabel.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					gui.highlightTabInLeftList(companyName);
+					gui.showTab(companyName);
+				}
+			});
 		}
 
 		JLabel detailsLabel = new JLabel("Our notes:");
@@ -153,7 +163,7 @@ public class EntryTab {
 					entryListComponent.setSelectedIndex(entryListComponent.locationToIndex(e.getPoint()));
 					String selectedItem = (String) entryListComponent.getSelectedValue();
 					gui.highlightTabInLeftList(selectedItem);
-					gui.showSelectedTab();
+					gui.showTab(selectedItem);
 				}
 			});
 
@@ -176,6 +186,13 @@ public class EntryTab {
 	
 	public Entry getEntry() {
 		return entry;
+	}
+	
+	/**
+	 * True if it represents a person, false if it represents a company
+	 */
+	public boolean representsPerson() {
+		return entry instanceof Person;
 	}
 
 	public boolean isItem(String item) {

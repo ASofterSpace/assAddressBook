@@ -71,6 +71,8 @@ public class GUI extends MainWindow {
 	private JMenuItem deleteCurEntry;
 	private JMenuItem saveEntries;
 	private JMenuItem close;
+	private JCheckBoxMenuItem showPeople;
+	private JCheckBoxMenuItem showCompanies;
 	private JMenuItem addPersonPopup;
 	private JMenuItem addCompanyPopup;
 	private JMenuItem renameCurEntryPopup;
@@ -82,6 +84,9 @@ public class GUI extends MainWindow {
 	private JList<String> entryListComponent;
 	private JPopupMenu entryListPopup;
 	private String[] strEntries;
+	
+	private boolean showPeopleSwitch = true;
+	private boolean showCompaniesSwitch = false;
 
 
 	public GUI(ConfigFile config) {
@@ -93,6 +98,9 @@ public class GUI extends MainWindow {
 		entryTabs = new ArrayList<>();
 		
 		entryCtrl = new EntryCtrl();
+		
+		showPeopleSwitch = configuration.getBoolean("showPeople", true);
+		showCompaniesSwitch = configuration.getBoolean("showCompanies", false);
 	}
 
 	@Override
@@ -190,6 +198,27 @@ public class GUI extends MainWindow {
 			}
 		});
 		file.add(close);
+		
+		JMenu show = new JMenu("Show");
+		menu.add(show);
+		showPeople = new JCheckBoxMenuItem("Show People");
+		showPeople.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setShowPeopleSwitch(!showPeopleSwitch);
+			}
+		});
+		showPeople.setSelected(showPeopleSwitch);
+		show.add(showPeople);
+		showCompanies = new JCheckBoxMenuItem("Show Companies");
+		showCompanies.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setShowCompaniesSwitch(!showCompaniesSwitch);
+			}
+		});
+		showCompanies.setSelected(showCompaniesSwitch);
+		show.add(showCompanies);
 		
 		JMenu huh = new JMenu("?");
 		JMenuItem about = new JMenuItem("About");
@@ -346,7 +375,29 @@ public class GUI extends MainWindow {
 	    return mainPanel;
 	}
 
-	public void showSelectedTab() {
+	public void setShowPeopleSwitch(boolean value) {
+
+		showPeopleSwitch = value;
+		
+		showPeople.setSelected(showPeopleSwitch);
+
+		configuration.set("showPeople", showPeopleSwitch);
+
+		regenerateEntryList();
+	}
+
+	public void setShowCompaniesSwitch(boolean value) {
+
+		showCompaniesSwitch = value;
+		
+		showCompanies.setSelected(showCompaniesSwitch);
+
+		configuration.set("showCompanies", showPeopleSwitch);
+
+		regenerateEntryList();
+	}
+
+	private void showSelectedTab() {
 
 		String selectedItem = (String) entryListComponent.getSelectedValue();
 
@@ -361,7 +412,7 @@ public class GUI extends MainWindow {
 		showTab(selectedItem);
 	}
 
-	private void showTab(String name) {
+	public void showTab(String name) {
 
 		for (EntryTab tab : entryTabs) {
 			if (tab.isItem(name)) {
@@ -586,6 +637,12 @@ public class GUI extends MainWindow {
 
 		List<Company> companies = new ArrayList<>(entryCtrl.getCompanies());
 		
+		Collections.sort(companies, new Comparator<Company>() {
+			public int compare(Company a, Company b) {
+				return a.getName().toLowerCase().compareTo(b.getName().toLowerCase());
+			}
+		});
+
 		final String[] companiesArr = new String[companies.size()];
 		int i = 0;
 		for (Company company : companies) {
@@ -594,7 +651,9 @@ public class GUI extends MainWindow {
 		}
 
 		final JComboBox<String> newCompany = new JComboBox<>(companiesArr);
-		newCompany.setSelectedIndex(0);
+		if (i > 0) {
+			newCompany.setSelectedIndex(0);
+		}
 		newCompany.setEditable(false);
 		
 		if (EntryKind.PERSON.equals(kind)) {
@@ -652,7 +711,10 @@ public class GUI extends MainWindow {
 		for (int i = 0; i < name.length(); i++) {
 			char curChar = name.charAt(i);
 			if (Character.isLetter(curChar) || Character.isDigit(curChar)) {
-				result.append(curChar);
+				int isCurCharAscii = name.charAt(i);
+				if (isCurCharAscii < 0x80) {
+					result.append(curChar);
+				}
 			}
 		}
 		
@@ -956,17 +1018,29 @@ public class GUI extends MainWindow {
 	 */
 	public void regenerateEntryList() {
 
-		Collections.sort(entryTabs, new Comparator<EntryTab>() {
+		List<EntryTab> tabs = new ArrayList<>();
+		
+		for (EntryTab curTab : entryTabs) {
+			if (curTab.representsPerson() && showPeopleSwitch) {
+				tabs.add(curTab);
+			} else {
+				if ((!curTab.representsPerson()) && showCompaniesSwitch) {
+					tabs.add(curTab);
+				}
+			}
+		}
+
+		Collections.sort(tabs, new Comparator<EntryTab>() {
 			public int compare(EntryTab a, EntryTab b) {
-				return a.getName().compareTo(b.getName());
+				return a.getName().toLowerCase().compareTo(b.getName().toLowerCase());
 			}
 		});
-	
-		strEntries = new String[entryTabs.size()];
+
+		strEntries = new String[tabs.size()];
 
 		int i = 0;
 
-		for (EntryTab entryTab : entryTabs) {
+		for (EntryTab entryTab : tabs) {
 			strEntries[i] = entryTab.getName();
 			if (entryTab.hasBeenChanged()) {
 				strEntries[i] += CHANGE_INDICATOR;
@@ -979,8 +1053,8 @@ public class GUI extends MainWindow {
 		// if there is no last shown tab...
 		if (currentlyShownTab == null) {
 			// ... show the first tab explicitly - this is fun, and the tabbed layout otherwise shows it anyway, so may as well...
-			if (entryTabs.size() > 0) {
-				currentlyShownTab = entryTabs.get(0);
+			if (tabs.size() > 0) {
+				currentlyShownTab = tabs.get(0);
 			}
 		}
 
