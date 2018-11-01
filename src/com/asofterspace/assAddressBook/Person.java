@@ -6,8 +6,11 @@ public class Person extends Entry {
 	private Company company;
 
 
-	public Person (EntryFile file) {
-		super(file);
+	public Person (EntryCtrl parent, EntryFile file, Company company) {
+
+		super(parent, file);
+		
+		this.company = company;
 	}
 
 	public Company getCompany() {

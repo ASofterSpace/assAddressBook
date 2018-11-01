@@ -8,11 +8,15 @@ import java.util.List;
 public abstract class Entry {
 
 	private EntryFile file;
+	
+	protected EntryCtrl parent;
 
 
-	public Entry(EntryFile file) {
+	public Entry(EntryCtrl parent, EntryFile file) {
 
 		this.file = file;
+		
+		this.parent = parent;
 	}
 	
 	protected String getValue(String key) {
@@ -52,7 +56,8 @@ public abstract class Entry {
 	}
 	
 	public void delete() {
-		// TODO
+		parent.removeEntry(this);
+		file.delete();
 	}
 	
 	public void save() {

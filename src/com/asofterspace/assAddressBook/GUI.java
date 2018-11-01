@@ -24,6 +24,8 @@ import java.awt.FlowLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -228,6 +230,7 @@ public class GUI extends MainWindow {
 			}
 		});
 		entryListPopup.add(addCompanyPopup);
+		entryListPopup.addSeparator();
 		renameCurEntryPopup = new JMenuItem("Rename Current Entry");
 		renameCurEntryPopup.addActionListener(new ActionListener() {
 			@Override
@@ -343,7 +346,7 @@ public class GUI extends MainWindow {
 	    return mainPanel;
 	}
 
-	private void showSelectedTab() {
+	public void showSelectedTab() {
 
 		String selectedItem = (String) entryListComponent.getSelectedValue();
 
@@ -701,12 +704,18 @@ public class GUI extends MainWindow {
 		tmpCi.save();
 
 		// keep track of which entries there were before loading somesuch... (making a shallow copy!)
-		Set<Entry> entriesBefore = new HashSet<>(entryCtrl.getEntries());
+		List<Entry> entriesBefore = new ArrayList<>(entryCtrl.getEntries());
 
 		// try {
-			EntryFile newEntryFile = entryCtrl.loadAnotherEntryFile(tmpCi, kind);
+			EntryFile newEntryFile;
 
-			Set<Entry> entriesAfter = new HashSet<>(entryCtrl.getEntries());
+			if (EntryKind.PERSON.equals(kind)) {
+				newEntryFile = entryCtrl.loadAnotherPersonFile(tmpCi, belongsToCompany);
+			} else {
+				newEntryFile = entryCtrl.loadAnotherCompanyFile(tmpCi);
+			}
+
+			List<Entry> entriesAfter = new ArrayList<>(entryCtrl.getEntries());
 
 			entriesAfter.removeAll(entriesBefore);
 
@@ -915,8 +924,6 @@ public class GUI extends MainWindow {
 			return true;
 		}
 
-		// TODO :: make it configurable whether to also delete the related activity!
-
 		// tell the currently opened entry tab to tell the cdmentry to tell the cdmfile to delete the entry
 		// (actually, most likely the whole file has to be deleted, together with potentially the activity mapper
 		// entry that attaches the entry to an activity, and possibly even the entire activity... hooray!)
@@ -949,6 +956,12 @@ public class GUI extends MainWindow {
 	 */
 	public void regenerateEntryList() {
 
+		Collections.sort(entryTabs, new Comparator<EntryTab>() {
+			public int compare(EntryTab a, EntryTab b) {
+				return a.getName().compareTo(b.getName());
+			}
+		});
+	
 		strEntries = new String[entryTabs.size()];
 
 		int i = 0;
@@ -983,7 +996,7 @@ public class GUI extends MainWindow {
 		highlightTabInLeftList(currentlyShownTab.getName());
 	}
 
-	private void highlightTabInLeftList(String name) {
+	public void highlightTabInLeftList(String name) {
 
 		int i = 0;
 
@@ -1052,7 +1065,7 @@ public class GUI extends MainWindow {
 		// update the entry list on the left and load the new entry tabs
 		entryTabs = new ArrayList<>();
 
-		Set<Entry> entries = entryCtrl.getEntries();
+		List<Entry> entries = entryCtrl.getEntries();
 		for (Entry entry : entries) {
 			entryTabs.add(new EntryTab(mainPanelRight, entry, this, entryCtrl));
 		}

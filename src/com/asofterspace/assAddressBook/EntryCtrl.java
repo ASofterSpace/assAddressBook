@@ -4,6 +4,8 @@ import com.asofterspace.toolbox.io.Directory;
 import com.asofterspace.toolbox.io.File;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,14 +15,14 @@ public class EntryCtrl {
 
 	private Directory baseDir;
 	
-	private Set<Entry> entries;
+	private List<Entry> entries;
 	
 
 	public EntryCtrl () {
 	
 		baseDir = null;
 		
-		entries = new HashSet<>();
+		entries = new ArrayList<>();
 	}
 	
 	public void loadDirectory(Directory baseDir) {
@@ -29,14 +31,14 @@ public class EntryCtrl {
 		
 		baseDir.create();
 		
-		entries = new HashSet<>();
+		entries = new ArrayList<>();
 		
 		// all files directly inside the base dir are company files (then inside the companies are the actual people files)
 		List<File> companyFiles = baseDir.getAllFiles(false);
 		
 		for (File companyFile : companyFiles) {
 			
-			Company curCompany = new Company(new EntryFile(companyFile));
+			Company curCompany = new Company(this, new EntryFile(companyFile));
 			
 			entries.add(curCompany);
 			
@@ -45,20 +47,25 @@ public class EntryCtrl {
 			List<File> peopleFiles = curCompanyDir.getAllFiles(false);
 			
 			for (File peopleFile : peopleFiles) {
-				entries.add(new Person(new EntryFile(peopleFile)));
+				entries.add(new Person(this, new EntryFile(peopleFile), curCompany));
 			}
 		}
 	}
 	
-	public EntryFile loadAnotherEntryFile(File fileToLoad, EntryKind kind) {
+	public EntryFile loadAnotherCompanyFile(File fileToLoad) {
 		
 		EntryFile result = new EntryFile(fileToLoad);
 		
-		if (EntryKind.PERSON.equals(kind)) {
-			entries.add(new Person(result));
-		} else {
-			entries.add(new Company(result));
-		}
+		entries.add(new Company(this, result));
+		
+		return result;
+	}
+	
+	public EntryFile loadAnotherPersonFile(File fileToLoad, Company belongsTo) {
+		
+		EntryFile result = new EntryFile(fileToLoad);
+		
+		entries.add(new Person(this, result, belongsTo));
 		
 		return result;
 	}
@@ -71,7 +78,7 @@ public class EntryCtrl {
 		return baseDir != null;
 	}
 	
-	public Set<Entry> getEntries() {
+	public List<Entry> getEntries() {
 		return entries;
 	}
 	
@@ -86,6 +93,39 @@ public class EntryCtrl {
 		}
 		
 		return result;
+	}
+	
+	public List<Person> getPeople() {
+	
+		List<Person> result = new ArrayList<>();
+		
+		for (Entry entry : entries) {
+			if (entry instanceof Person) {
+				result.add((Person) entry);
+			}
+		}
+		
+		return result;
+	}
+	
+	public List<Person> getPeople(Company belongingTo) {
+	
+		List<Person> result = new ArrayList<>();
+		
+		for (Entry entry : entries) {
+			if (entry instanceof Person) {
+				Person person = (Person) entry;
+				if (belongingTo.equals(person.getCompany())) {
+					result.add(person);
+				}
+			}
+		}
+		
+		return result;
+	}
+	
+	public void removeEntry(Entry entryToRemove) {
+		entries.remove(entryToRemove);
 	}
 	
 	public void save() {
