@@ -128,6 +128,12 @@ public class EntryCtrl {
 		entries.remove(entryToRemove);
 	}
 	
+	/**
+	 * This saves all entries - however, we try to avoid calling this method, as several people might
+	 * the using the address book at the same time, and therefore we want to only save when there actually
+	 * was a change (therefore, we are going via the EntryTabs which keep track of changes and never call
+	 * entryCtrl.save())
+	 */
 	public void save() {
 		
 		for (Entry entry : entries) {

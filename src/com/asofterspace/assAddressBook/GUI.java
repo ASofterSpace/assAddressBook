@@ -65,6 +65,7 @@ public class GUI extends MainWindow {
 	// on the left hand side, we add this string to indicate that the entry has changed
 	private final static String CHANGE_INDICATOR = " *";
 
+	private JMenuItem refreshEntries;
 	private JMenuItem addPerson;
 	private JMenuItem addCompany;
 	private JMenuItem renameCurEntry;
@@ -117,8 +118,6 @@ public class GUI extends MainWindow {
 
 		createMainPanel(mainFrame);
 
-		// TODO :: show an extra panel in the middle that lets a user either create a new empty CDM, or open a CDM directory - instead of having to wobble through the menu in search of it all ^^
-
 		configureGUI();
 
 		refreshTitleBar();
@@ -127,9 +126,7 @@ public class GUI extends MainWindow {
 
 		super.show();
 		
-		entryCtrl.loadDirectory(new Directory("data"));
-		
-		reloadAllEntryTabs();
+		refreshAllData();
 	}
 
 	private JMenuBar createMenu(JFrame parent) {
@@ -140,6 +137,19 @@ public class GUI extends MainWindow {
 
 		JMenu file = new JMenu("File");
 		menu.add(file);
+		refreshEntries = new JMenuItem("Refresh All Entries From Shared Disk");
+		refreshEntries.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ifAllowedToLeaveCurrentDirectory(new Callback() {
+					public void call() {
+						refreshAllData();
+					}
+				});
+			}
+		});
+		file.add(refreshEntries);
+		file.addSeparator();
 		addPerson = new JMenuItem("Add Person");
 		addPerson.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, ActionEvent.CTRL_MASK));
 		addPerson.addActionListener(new ActionListener() {
@@ -176,7 +186,7 @@ public class GUI extends MainWindow {
 		});
 		file.add(deleteCurEntry);
 		file.addSeparator();
-		saveEntries = new JMenuItem("Save All Entries");
+		saveEntries = new JMenuItem("Save All Changed Entries");
 		saveEntries.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -392,7 +402,7 @@ public class GUI extends MainWindow {
 		
 		showCompanies.setSelected(showCompaniesSwitch);
 
-		configuration.set("showCompanies", showPeopleSwitch);
+		configuration.set("showCompanies", showCompaniesSwitch);
 
 		regenerateEntryList();
 	}
@@ -502,7 +512,7 @@ public class GUI extends MainWindow {
 	}
 	*/
 
-	private void prepareToSave() {
+	private void saveEntries() {
 
 		if (!entryCtrl.hasDirectoryBeenLoaded()) {
 			JOptionPane.showMessageDialog(mainFrame, "The entries cannot be saved as no directory has been opened.", "Sorry", JOptionPane.ERROR_MESSAGE);
@@ -515,21 +525,16 @@ public class GUI extends MainWindow {
 
 		// apply all changes, such that the current source code editor contents are actually stored in the CDM file objects
 		for (EntryTab entryTab : entryTabs) {
-			entryTab.applyChanges();
+			entryTab.saveIfChanged();
 		}
 
 		// remove all change indicators on the left-hand side
 		regenerateEntryList();
-	}
+		
+		// DO NOT save all opened files - instead, we called entryTab.saveIfChanged, so we only save un-saved changes!
+		// entryCtrl.save();
 
-	private void saveEntries() {
-
-		prepareToSave();
-
-		// save all opened files
-		entryCtrl.save();
-
-		JOptionPane.showMessageDialog(mainFrame, "All entries have been saved!", "Entries Saved", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(mainFrame, "All changed entries have been saved!", "Entries Saved", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	/*
@@ -1074,8 +1079,13 @@ public class GUI extends MainWindow {
 
 		int i = 0;
 
-		for (EntryTab entryTab : entryTabs) {
-			if (name.equals(entryTab.getName())) {
+		for (String strEntry : strEntries) {
+		
+			if (strEntry.endsWith(CHANGE_INDICATOR)) {
+				strEntry = strEntry.substring(0, strEntry.length() - CHANGE_INDICATOR.length());
+			}
+
+			if (name.equals(strEntry)) {
 				entryListComponent.setSelectedIndex(i);
 				break;
 			}
@@ -1091,22 +1101,32 @@ public class GUI extends MainWindow {
 	private void reEnableDisableMenuItems() {
 
 		boolean dirLoaded = entryCtrl.hasDirectoryBeenLoaded();
+		
+		boolean companiesExist = entryCtrl.getCompanies().size() > 0;
 
 		boolean entriesExist = entryTabs.size() > 0;
 
 		boolean entryIsSelected = currentlyShownTab != null;
 
 		// enabled and disable menu items according to the state of the application
+		refreshEntries.setEnabled(dirLoaded);
 		saveEntries.setEnabled(dirLoaded);
 		// saveEntriesAs.setEnabled(dirLoaded);
-		addPerson.setEnabled(dirLoaded);
-		addPersonPopup.setEnabled(dirLoaded);
+		addPerson.setEnabled(companiesExist);
+		addPersonPopup.setEnabled(companiesExist);
 		addCompany.setEnabled(dirLoaded);
 		addCompanyPopup.setEnabled(dirLoaded);
 		renameCurEntry.setEnabled(entryIsSelected);
 		renameCurEntryPopup.setEnabled(entryIsSelected);
 		deleteCurEntry.setEnabled(entryIsSelected);
 		deleteCurEntryPopup.setEnabled(entryIsSelected);
+	}
+	
+	private void refreshAllData() {
+	
+		entryCtrl.loadDirectory(new Directory("data"));
+						
+		reloadAllEntryTabs();
 	}
 
 	private void refreshTitleBar() {
@@ -1135,6 +1155,12 @@ public class GUI extends MainWindow {
 	}
 
 	private void reloadAllEntryTabs() {
+	
+		if (entryTabs != null) {
+			for (EntryTab entryTab : entryTabs) {
+				entryTab.remove();
+			}
+		}
 
 		// update the entry list on the left and load the new entry tabs
 		entryTabs = new ArrayList<>();

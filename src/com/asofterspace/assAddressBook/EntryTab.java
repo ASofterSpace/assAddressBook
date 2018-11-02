@@ -270,6 +270,16 @@ public class EntryTab {
 		// scroll to the top
 		detailsMemo.setCaretPosition(0);
 	}
+	
+	public void saveIfChanged() {
+
+		if (changed) {
+		
+			applyChanges();
+			
+			entry.save();
+		}
+	}
 
 	public void applyChanges() {
 
