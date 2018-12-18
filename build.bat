@@ -14,7 +14,6 @@ md configuration
 md io
 md gui
 md utils
-md web
 
 cd ..\..\..\..
 
@@ -23,7 +22,6 @@ copy "..\Toolbox-Java\src\com\asofterspace\toolbox\configuration\*.*" "src\com\a
 copy "..\Toolbox-Java\src\com\asofterspace\toolbox\io\*.*" "src\com\asofterspace\toolbox\io"
 copy "..\Toolbox-Java\src\com\asofterspace\toolbox\gui\*.*" "src\com\asofterspace\toolbox\gui"
 copy "..\Toolbox-Java\src\com\asofterspace\toolbox\utils\*.*" "src\com\asofterspace\toolbox\utils"
-copy "..\Toolbox-Java\src\com\asofterspace\toolbox\web\*.*" "src\com\asofterspace\toolbox\web"
 
 rd /s /q bin
 

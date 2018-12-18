@@ -16,7 +16,6 @@ mkdir configuration
 mkdir io
 mkdir gui
 mkdir utils
-mkdir web
 
 cd ../../../..
 
@@ -25,7 +24,6 @@ cp ../Toolbox-Java/src/com/asofterspace/toolbox/configuration/*.* src/com/asofte
 cp ../Toolbox-Java/src/com/asofterspace/toolbox/io/*.* src/com/asofterspace/toolbox/io
 cp ../Toolbox-Java/src/com/asofterspace/toolbox/gui/*.* src/com/asofterspace/toolbox/gui
 cp ../Toolbox-Java/src/com/asofterspace/toolbox/utils/*.* src/com/asofterspace/toolbox/utils
-cp ../Toolbox-Java/src/com/asofterspace/toolbox/web/*.* src/com/asofterspace/toolbox/web
 
 rm -rf bin
 
